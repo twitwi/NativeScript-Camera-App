@@ -120,6 +120,10 @@ function createCameraPreviewSession() {
 
     var texture = mTextureView.getSurfaceTexture();
 
+    if (!texture) {
+        return;
+    }
+
     // We configure the size of default buffer to be the size of camera preview we want.
     texture.setDefaultBufferSize(800, 480);
 
