@@ -1,20 +1,22 @@
 {
-	"nativescript": {
-		"id": "org.nativescript.cameraApp",
-		"tns-android": {
-			"version": "3.3.0"
-		}
-	},
-	"dependencies": {
-		"nativescript-permissions": "^1.2.3",
-		"tns-core-modules": "^3.3.0"
-	},
-	"devDependencies": {
-		"babel-traverse": "6.9.0",
-		"babel-types": "6.9.1",
-		"babylon": "6.8.0",
-		"filewalker": "0.1.2",
-		"lazy": "1.0.11",
-		"tns-platform-declarations": "^3.3.0"
-	}
+  "description": "NativeScript Camera application with live preview",
+  "license": "SEE LICENSE IN <your-license-filename>",
+  "repository": "https://github.com/twitwi/NativeScript-Camera-App",
+  "nativescript": {
+    "id": "org.nativescript.cameraApp",
+    "tns-android": {
+      "version": "3.4.1"
+    }
+  },
+  "dependencies": {
+    "nativescript-permissions": "^1.2.3",
+    "nativescript-theme-core": "~1.0.4",
+    "tns-core-modules": "~3.4.0"
+  },
+  "devDependencies": {
+    "babel-traverse": "6.26.0",
+    "babel-types": "6.26.0",
+    "babylon": "6.18.0",
+    "lazy": "1.0.11"
+  }
 }

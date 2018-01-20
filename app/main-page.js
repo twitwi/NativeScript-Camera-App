@@ -55,7 +55,9 @@ function onTakeShot(args) {
         });
     } else if (app.android) {
         console.log("onTakeShot");
-        lockFocus();
+        // 2 alternatives
+        //lockFocus(); // after autofocus
+        captureStillPicture(); // direct
     }
 }
 exports.onTakeShot = onTakeShot;
@@ -86,12 +88,19 @@ function captureStillPicture() {
         onCaptureCompleted: function (session, request, result) {
             console.log("onCaptureCompleted");
             // console.log(mFile.toString());
+            resumeLiveCapture();
         }
     });
 
     mCaptureSession.stopRepeating();
     mCaptureSession.abortCaptures();
     mCaptureSession.capture(captureBuilder.build(), new CaptureCallback(), null);
+}
+
+function resumeLiveCapture() {
+    mCaptureSession.stopRepeating();
+    mCaptureSession.abortCaptures();
+    mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback = new MyCaptureSessionCaptureCallback(), null);
 }
 
 function setAutoFlash(requestBuilder) {
@@ -123,6 +132,7 @@ function createCameraPreviewSession() {
 
     var surfaceList = new java.util.ArrayList();
     surfaceList.add(surface);
+    surfaceList.add(mImageReader.getSurface());
     mCameraDevice.createCaptureSession(surfaceList, new MyCameraCaptureSessionStateCallback(), null);
 }
 
@@ -195,15 +205,15 @@ function onCreatingView(args) {
 
         //API 23 runtime permission check
         if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.LOLLIPOP) {
-            console.log("checking presmisions ....");
+            console.log("checking presmissions ....");
 
             if (android.support.v4.content.ContextCompat.checkSelfPermission(appContext, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
 
-                console.log("Permison already granted!!!!!");
+                console.log("Permission already granted!!!!!");
                 cameraManager.openCamera(mCameraId, mStateCallBack /*mCameraDeviceStateCallback*/, mBackgroundHandler);
 
             } else if (android.support.v4.content.ContextCompat.checkSelfPermission(appContext, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_DENIED) {
-                console.log("NO PERMISIONS - about to try get them!!!"); // I am crashing here - wrong reference for shouldShowRequestPermissionRationale !?
+                console.log("NO PERMISSIONS - about to try get them!!!"); // I am crashing here - wrong reference for shouldShowRequestPermissionRationale !?
                 permissions.requestPermission(android.Manifest.permission.CAMERA, "I need these permissions to use Android Camera")
                     .then(function () {
                         console.log("Woo Hoo, I have the power!");
@@ -244,7 +254,8 @@ var MyCameraCaptureSessionStateCallback = android.hardware.camera2.CameraCapture
 
         // Finally, we start displaying the camera preview.
         mPreviewRequest = mPreviewRequestBuilder.build();
-        mCaptureSession.setRepeatingRequest(mPreviewRequest, new MyCaptureSessionCaptureCallback(), null);
+        mCaptureCallback = new MyCaptureSessionCaptureCallback();
+        mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback, null);
 
     },
     onConfigureFailed: function (cameraCaptureSession) {
@@ -265,6 +276,7 @@ var MyCaptureSessionCaptureCallback = android.hardware.camera2.CameraCaptureSess
                 if (afState === null) {
                     captureStillPicture();
                 } else if (android.hardware.camera2.CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState ||
+                    android.hardware.camera2.CaptureResult.CONTROL_AF_STATE_PASSIVE_FOCUSED == afState ||
                     android.hardware.camera2.CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED == afState) {
                     // CONTROL_AE_STATE can be null on some devices
                     var aeState = result.get(android.hardware.camera2.CaptureResult.CONTROL_AE_STATE);
@@ -314,7 +326,7 @@ var MyCaptureSessionCaptureCallback = android.hardware.camera2.CameraCaptureSess
 });
 
 // (example for: java static interface to javaScript )
-// from Java : public static interface    
+// from Java : public static interface
 var mOnImageAvailableListener = new android.media.ImageReader.OnImageAvailableListener({
     onImageAvailable: function (reader) {
 
@@ -324,7 +336,7 @@ var mOnImageAvailableListener = new android.media.ImageReader.OnImageAvailableLi
     }
 });
 
-// from Java : public static interface    
+// from Java : public static interface
 var mSurfaceTextureListener = new android.view.TextureView.SurfaceTextureListener({
 
     onSurfaceTextureAvailable: function (texture, width, height) {

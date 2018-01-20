@@ -1,3 +1,12 @@
+# NativeScript-Camera-App
+
+From https://github.com/NickIliev/NativeScript-cameraApp-poc, with the following changes:
+
+- history cleanup (75MB -> 1.6MB) by removing generated files
+- new project descriptor to run with the current tns, and cleaner?
+- changes to make the “Take Shot” button work on (more?) android devices
+
+
 # sample-cameraApp (PoC)
 Sample NativeScript application showing usage of native camera api via {N} in iOS and Android (Proof of Concept).
 Showing basic functionality for the camera APIs (both iOS and the new camera API for Android - camera2) 
