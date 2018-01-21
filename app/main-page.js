@@ -12,7 +12,8 @@ var app = require('application');
 // ⇓⇓⇓⇓⇓ Accelerometer and app logic ⇓⇓⇓⇓⇓
 var accelerometer = require("nativescript-accelerometer-advanced");
 var fs = require('tns-core-modules/file-system');
-var ShareFile = require('nativescript-share-file').ShareFile;
+//var ShareFile = require('nativescript-share-file').ShareFile; //unperfect?
+var ShareFile = require('./share-file.js');
 
 if (app.android) {
     var orientation = require("./orientation.js");
@@ -60,25 +61,7 @@ exports.onStartStop = function() {
         file.writeText(data)
         .then(function () {
             // Succeeded writing to the file.
-            //* Share
-            try {
-                //console.log(app.android.context.getPackageName(), app.android.context.getApplicationContext().getFileProviderAuthority());
-                var uri = android.support.v4.content.FileProvider.getUriForFile(
-                    app.android.context,
-                    "com.heeere.fileprovider", //app.android.context.getFileProviderAuthority(),
-                    new java.io.File(file.path));
-            }catch(e) {
-                console.log("exc", e);
-            }
-            console.log("urri", uri)
-            var sh = new ShareFile();
-            sh.open({
-                path: "file://"+file.path,
-                uri: uri,
-                intentTitle: 'Papple'
-            });
-            //*/
-
+            ShareFile.shareUsingProviderAuthority([file.path], "com.heeere.fileprovider", "Papple");
         }, function (error) {
             console.log("Failed to write to the file", file.path);
         });
