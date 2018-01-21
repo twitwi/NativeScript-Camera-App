@@ -1,3 +1,5 @@
+@import "nativescript-theme-core/css/purple.css";
+
 ﻿Page {
     background-color: darkcyan;
 }
@@ -8,4 +10,8 @@ StackLayout {
 
 ActionItem {
     font-size: 36;
+}
+
+.inprogress {
+    background-color: darkcyan;
 }

@@ -7,13 +7,134 @@
 
 var permissions = require("nativescript-permissions");
 var app = require('application');
+
+// ╔═══╦═════════════════════════════╦═══╗
+// ⇓⇓⇓⇓⇓ Accelerometer and app logic ⇓⇓⇓⇓⇓
+var accelerometer = require("nativescript-accelerometer-advanced");
+var fs = require('tns-core-modules/file-system');
+var ShareFile = require('nativescript-share-file').ShareFile;
+
+if (app.android) {
+    var orientation = require("./orientation.js");
+    // OK:     orientation.lockOrientation("landscape");
+}
+
+var mLogs;
+var mLogFileName = "exps/log.txt";
+var mRecording = false;
+var mNextCapture = new Date().getTime();
+function updateNextCapture(d) {
+    mNextCapture = d + parseInt(2000+Math.random()*1000);
+}
+const TYPE_ACCELEROMETER = 10;
+exports.onStartStop = function() {
+    if (!mRecording) {
+        mLogs = [];
+        var d = new Date().getTime();
+        mLogs.push(["BEGIN", d, 0]);
+        updateNextCapture(d);
+        accelerometer.startAccelerometerUpdates(function(data) {
+            if (data.sensortype == TYPE_ACCELEROMETER) {
+                var norm = Math.sqrt(data.x*data.x + data.y*data.y + data.z*data.z);
+                var d = new Date().getTime();
+                mLogs.push(["ACCEL", d, norm]);
+                //console.log(" X: " + data.x + " Y: " + data.y + " Z: " + data.z + " Sensor Type: " + data.sensortype + " Time in milliseconds : " + data.timemilli);
+                //console.log(d + " " + norm);
+                if (d >= mNextCapture) {
+                    mLogs.push(["SHOOT", d, 0]);
+                    updateNextCapture(d);
+                    captureStillPicture();
+                }
+            }
+        }, { sensorDelay: "fastest" });
+        mRecording = true;
+    } else {
+        mRecording = false;
+        var d = new Date().getTime();
+        mLogs.push(["END", d, 0]);
+        accelerometer.stopAccelerometerUpdates();
+        //console.log(JSON.stringify(mLogs));
+        var documents = fs.knownFolders.documents();
+        var file = documents.getFile(mLogFileName);
+        var data = (mLogs.map((e)=>e.join(","))).join("\n")
+        file.writeText(data)
+        .then(function () {
+            // Succeeded writing to the file.
+            //* Share
+            try {
+                //console.log(app.android.context.getPackageName(), app.android.context.getApplicationContext().getFileProviderAuthority());
+                var uri = android.support.v4.content.FileProvider.getUriForFile(
+                    app.android.context,
+                    "com.heeere.fileprovider", //app.android.context.getFileProviderAuthority(),
+                    new java.io.File(file.path));
+            }catch(e) {
+                console.log("exc", e);
+            }
+            console.log("urri", uri)
+            var sh = new ShareFile();
+            sh.open({
+                path: "file://"+file.path,
+                uri: uri,
+                intentTitle: 'Papple'
+            });
+            //*/
+
+        }, function (error) {
+            console.log("Failed to write to the file", file.path);
+        });
+    }
+    var st = page.getViewById("status");
+    if (st) st.className = mRecording ? "inprogress" : "";
+
+};
+
+/*
+(function (){
+    var documents = fs.knownFolders.documents();
+    var file = documents.getFile(mLogFileName);
+    file.readText()
+    .then(function (content) {
+        // Successfully read the file's content.
+        console.log(content);
+    }, function (error) {
+        console.log("Failed to read from the file.");
+    });
+})()
+//*/
+
+function processCaptureComplete(session, request, result) {
+    var d = new Date().getTime();
+    mLogs.push(["CAPed", d, 0]);
+}
+
+function exitRecordings(args) {
+    console.log("MODULE", "EXIT");
+    if (mRecording) {
+        mRecording = false;
+        accelerometer.stopAccelerometerUpdates();
+    }
+    stopAllCaptures();
+
+    mCameraOpenCloseLock.release();
+    setTimeout(function() {
+        mCaptureSession.close();
+    }, 1000);
+    //mCameraDevice.close();
+    //mCameraDevice = null;
+}
+
+app.on(app.exitEvent, exitRecordings);
+// ╔═══╦═════════════════════╦═══╗
+// ⇓⇓⇓⇓⇓ Camera related code ⇓⇓⇓⇓⇓
 var page;
+
 
 // for iOS output
 var output;
 
 // for android camera2
 if (app.android) {
+    console.log(app.android.startActivity);
     var mCameraId;
     var mCaptureSession;
     var mCameraDevice;
@@ -87,19 +208,22 @@ function captureStillPicture() {
     var CaptureCallback = android.hardware.camera2.CameraCaptureSession.CaptureCallback.extend({
         onCaptureCompleted: function (session, request, result) {
             console.log("onCaptureCompleted");
+            processCaptureComplete(session, request, result);
             // console.log(mFile.toString());
             resumeLiveCapture();
         }
     });
 
-    mCaptureSession.stopRepeating();
-    mCaptureSession.abortCaptures();
+    stopAllCaptures()
     mCaptureSession.capture(captureBuilder.build(), new CaptureCallback(), null);
 }
 
-function resumeLiveCapture() {
+function stopAllCaptures() {
     mCaptureSession.stopRepeating();
     mCaptureSession.abortCaptures();
+}
+function resumeLiveCapture() {
+    stopAllCaptures()
     mCaptureSession.setRepeatingRequest(mPreviewRequest, mCaptureCallback = new MyCaptureSessionCaptureCallback(), null);
 }
 

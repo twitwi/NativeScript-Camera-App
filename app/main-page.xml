@@ -3,11 +3,13 @@
         <ActionBar title="Title" icon="">
             <NavigationButton text="Back" icon="" tap="" />
             <ActionBar.actionItems>
-                <ActionItem icon="" text="Take Shot" tap="onTakeShot" ios.position="left" />
+                <ActionItem icon="" text="[GO/STOP]" tap="onStartStop" ios.position="left" />
+                <ActionItem icon="" text="Shoot" tap="onTakeShot" ios.position="left" />
             </ActionBar.actionItems>
         </ActionBar>
     </Page.actionBar>
     <StackLayout>
+        <Label id="status" text="STATUS" class=""/>
         <Placeholder creatingView="onCreatingView" id="placeholder-view"/>
     </StackLayout>
 </Page>
